@@ -1,0 +1,8 @@
+#coding=utf-8
+
+# applied key and secret from fcoin
+key = ''
+secret = ''
+
+# http proxy for scientific internet access
+proxy = None
