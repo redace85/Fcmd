@@ -105,6 +105,10 @@ class FcoinAPI():
         params = {'limit': limit}
         return await self.public_request(GET, url, **params)
 
+    async def query_market_all_tickers(self):
+        url = self.http_market+'all-tickers'
+        return await self.public_request(GET, url)
+
     async def query_orders(self, symbol, states='submitted', limit=20):
         url = self.http_orders
         params = {'symbol': symbol, 'limit': limit, 'states': states}

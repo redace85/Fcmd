@@ -107,3 +107,6 @@ config.py
 
 # vscode
 .vscode
+
+# experiment dir
+exp/

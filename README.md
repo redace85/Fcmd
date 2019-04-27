@@ -1,7 +1,9 @@
 # Fcmd
 Fcmd 是一个用于操作fcoin账户的交互式命令行工具
 
-:cn:
+:cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: 
+
+使用的是fcoin官方提供的接口，文档地址：https://developer.fcoin.com/zh.html
 
 ---
 
@@ -24,6 +26,7 @@ mv config.py.example config.py
 
 编辑配置文件，填入在fcoin网站上开通的 key,secret 字串。  
 如果本机不能直接访问接口地址的话，可以设置一个代理服务器地址，目前只支持http的代理
+
 ```
 # http proxy for scientific internet access
 proxy = 'http://127.0.0.1:9012/'
