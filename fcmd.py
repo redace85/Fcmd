@@ -2,8 +2,11 @@
 #coding=utf-8
 from cmd import Cmd
 import time
+import os
+import sys
 import asyncio
 # local modules below
+import wsfcoinfeeder
 import aiofcoin
 import config
 
@@ -33,6 +36,8 @@ type ? to list the available cmds'''
 
         self.fcoin_obj = aiofcoin.FcoinAPI(
             config.key, config.secret, config.proxy)
+
+        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(config.proxy)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
         self.order_list_abbr = {'s': 'submitted',
@@ -65,6 +70,18 @@ type ? to list the available cmds'''
             print(json_obj)
         else:
             print('Operation Succeed!')
+
+    def __fire_alarm(self):
+        a_file = './alarm/alarm.mp3'
+        if os.path.isfile(a_file) and sys.platform == 'darwin':
+            # MAC OS 
+            os.system('afplay '+a_file)
+        else:
+            print('\7')
+            time.sleep(1)
+            print('\7')
+            time.sleep(1)
+            print('\7')
 
     def do_tb(self, arg):
         '''Query trading account balance
@@ -224,6 +241,7 @@ type ? to list the available cmds'''
             print('argments is needed')
             return
 
+        self.__fire_alarm()
         self.__handle_aio_result(
             self.fcoin_obj.query_market_ticker(arg+'usdt'), print_mtk)
 
@@ -466,6 +484,36 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
 
         self.__handle_aio_result(self.fcoin_obj.create_order(
             **params), self.__common_print_func)
+
+    def do_alat(self, arg):
+        '''Alarm at specific price of a trading pair
+        Args:
+            currency: name of the crypto currency
+            price: the price
+        Example:
+            # alarm at 0.10100 of ftusdt
+            :>>alat ft 0.10100
+        '''
+        if not arg:
+            print('argments is needed')
+            return
+
+        args = arg.split(' ')
+        if 2 != len(args):
+            print('2 args are needed')
+            return
+
+        async def async_f(fd, trading_pair, target_price):
+            async for jo in fd.feeding('ticker.'+trading_pair):
+                print(jo['ticker'])
+                if target_price == float(jo['ticker'][0]):
+                    break
+            await fd.close()
+
+        asyncio.run(async_f(self.wsfeeder, args[0]+'usdt', float(args[1])))
+        print('alarm at price:',args[1])
+        # ending when condition is met
+        self.__fire_alarm()
 
     def do_e(self, arg):
         '''This cmd is for expriment purpose only
