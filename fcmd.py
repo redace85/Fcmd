@@ -241,7 +241,6 @@ type ? to list the available cmds'''
             print('argments is needed')
             return
 
-        self.__fire_alarm()
         self.__handle_aio_result(
             self.fcoin_obj.query_market_ticker(arg+'usdt'), print_mtk)
 
