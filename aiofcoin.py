@@ -17,7 +17,6 @@ class FcoinAPI():
 
         self.http = 'https://%s/v2/' % api_address
         self.http_orders = self.http+'orders/'
-        self.http_account = self.http+'accounts/'
         self.http_market = self.http+'market/'
         self.http_otc = self.http+'broker/otc/'
         self.key = key
@@ -80,10 +79,19 @@ class FcoinAPI():
 
     async def query_trading_balance(self):
         """trading account balance"""
-        return await self.signed_request(GET, self.http_account+'balance')
+        return await self.signed_request(GET, self.http+'accounts/balance')
 
-    async def trans_mywallet2trading(self, currency, amount):
+    async def query_wallet_balance(self):
+        """trading account balance"""
+        return await self.signed_request(GET, self.http+'assets/accounts/balance')
+
+    async def trans_wallet2trading(self, currency, amount):
         url = self.http+'assets/accounts/assets-to-spot'
+        params = {'currency': currency, 'amount': amount}
+        return await self.signed_request(POST, url, **params)
+
+    async def trans_trading2wallet(self, currency, amount):
+        url = self.http+'accounts/spot-to-assets'
         params = {'currency': currency, 'amount': amount}
         return await self.signed_request(POST, url, **params)
 

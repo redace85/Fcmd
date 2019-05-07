@@ -50,11 +50,10 @@ fcmd.py
 | **`m`** market 市场行情 | mtk(ticker):最新ticker; mdp(depth):深度; mtr(trade):成交单 |
 | **`o`** order 交易单 | ol(list):交易单列表; oc(create):创建买卖单; osc(submit-cancel):撤销交易单 |
 | **`c`** otc 相关 | cb(balance):otc余额; ci(trans-in):转入; co(trans-out):转出|
+| **`t`** trading 交易账户 | tb(balance):交易余额; t2w(trading to wallet):交易账户转钱包账户|
+| **`w`** wallet 钱包账户 | wb(balance):钱包余额; w2t(wallet to trading):钱包账户转交易账户|
 
 其他命令
-- **`tb`**(trading account balance): 交易账户余额
-- **`w2t`**(wallet to trading): 钱包账户转交易账户
-
 - **`alat`**(alarm at): 盯盘功能，在指定的价格停止数据拉取并播放声音。（在当前目录下放置 alarm/alarm.mp3 文件，只支持MACOS）
 
 PS:目前otc的部分整体的流程还没完全搞明白，杠杆部分不太懂所以没有接入
