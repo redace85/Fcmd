@@ -3,7 +3,9 @@ Fcmd 是一个用于操作fcoin账户的交互式命令行工具
 
 :cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: 
 
-使用的是fcoin官方提供的接口，文档地址：https://developer.fcoin.com/zh.html
+使用的是fcoin官方提供的接口，文档地址：https://developer.fcoin.com/zh.html  
+为了增强安全性，现在加入了验证fcoin服务器的功能。
+根目录下 sca1b.crt 是 *.fcoin.com 域的证书。用于在链接时验证fcoin的服务器身份
 
 ---
 

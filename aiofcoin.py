@@ -4,8 +4,9 @@ import asyncio
 import aiohttp
 import hmac
 import hashlib
-import time
 import base64
+import ssl
+import time
 
 POST = 'POST'
 GET = 'GET'
@@ -22,6 +23,8 @@ class FcoinAPI():
         self.key = key
         self.secret = secret.encode('utf-8')
         self.proxy = proxy
+        self.sslcontext = ssl.create_default_context(
+            ssl.Purpose.CLIENT_AUTH, capath='sca1b.crt')
 
     async def signed_request(self, method, url, **params):
         param = ''
@@ -53,8 +56,8 @@ class FcoinAPI():
         }
 
         async with aiohttp.ClientSession() as sess:
-            async with sess.request(method, url, proxy=self.proxy,
-                                    headers=headers, json=params) as resp:
+            async with sess.request(method, url, ssl=self.sslcontext,
+                                    proxy=self.proxy, headers=headers, json=params) as resp:
                 return resp.status, await resp.json(content_type=None)
 
     async def public_request(self, method, url, **params):
@@ -73,8 +76,8 @@ class FcoinAPI():
                 url = url + '?' + param
 
         async with aiohttp.ClientSession() as sess:
-            async with sess.request(method, url, proxy=self.proxy,
-                                    json=params) as resp:
+            async with sess.request(method, url, ssl=self.sslcontext,
+                                    proxy=self.proxy, json=params) as resp:
                 return resp.status, await resp.json(content_type=None)
 
     async def query_trading_balance(self):
