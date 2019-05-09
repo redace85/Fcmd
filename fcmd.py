@@ -34,7 +34,9 @@ type ? to list the available cmds'''
         Cmd.__init__(self)
         print('setting up env ...')
 
-        self.fcoin_obj = aiofcoin.FcoinAPI(
+        self.eloop = asyncio.get_event_loop()
+
+        self.fcoin_obj = aiofcoin.FcoinAPI( self.eloop,
             config.key, config.secret, config.proxy)
 
         self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(config.proxy)
@@ -45,10 +47,14 @@ type ? to list the available cmds'''
         self.order_create_abbr = {'b': {'side': 'buy'}, 's': {'side': 'sell'},
                                   'l': {'type': 'limit'}, 'm': {'type': 'market'}}
         self.order_pos_cache = list()
+
+        self.currencies = list()
         print('env ready')
 
     def do_exit(self, arg):
         '''Exit Fcmd, shorthand: x'''
+        print('releasing env resource...')
+        self.eloop.run_until_complete(self.fcoin_obj.close_sess())
         print('Bye')
         return True
 
@@ -61,7 +67,7 @@ type ? to list the available cmds'''
                 print_func(*(await aw_obj))
             except Exception as e:
                 print(e)
-        asyncio.run(aiofunc())
+        self.eloop.run_until_complete(aiofunc())
 
     def __common_print_func(self, state_code, json_obj):
         print('state_code:{}\n'.format(state_code))
@@ -71,10 +77,35 @@ type ? to list the available cmds'''
         else:
             print('Operation Succeed!')
 
+    def __print_balance_func(self, state_code, json_obj):
+        if 'status' not in json_obj or 0 != json_obj['status']:
+            print(json_obj)
+            return
+        res_str = ''
+        line_pattern = '{:6}:b:{:},a:{},f:{}\n'
+
+        if 0 == len(self.currencies):
+            for o in json_obj['data']:
+                if '0.000000000000000000' != o['available']:
+                    res_str += line_pattern.format(o['currency'],
+                                                    o['balance'], o['available'], o['frozen'])
+        else:
+            for o in json_obj['data']:
+                c = o['currency']
+                if c in self.currencies:
+                    res_str += line_pattern.format(c,
+                                                    o['balance'], o['available'], o['frozen'])
+
+                    self.currencies.remove(c)
+                    if 0 == len(self.currencies):
+                        break
+
+        print(res_str)
+
     def __fire_alarm(self):
         a_file = './alarm/alarm.mp3'
         if os.path.isfile(a_file) and sys.platform == 'darwin':
-            # MAC OS 
+            # MAC OS
             os.system('afplay '+a_file)
         else:
             print('\7')
@@ -91,37 +122,11 @@ type ? to list the available cmds'''
             # query btc and tf balance of trading account
             :>>tb btc eth eos ft
         '''
-        currencies = []
         if arg:
-            currencies = arg.split(' ')
-
-        def print_tb(state_code, json_obj):
-            if 'status' not in json_obj or 0 != json_obj['status']:
-                print(json_obj)
-                return
-            res_str = ''
-            line_pattern = '{:6}:b:{:},a:{},f:{}\n'
-
-            if 0 == len(currencies):
-                for o in json_obj['data']:
-                    if '0.000000000000000000' != o['available']:
-                        res_str += line_pattern.format(o['currency'],
-                                                       o['balance'], o['available'], o['frozen'])
-            else:
-                for o in json_obj['data']:
-                    c = o['currency']
-                    if c in currencies:
-                        res_str += line_pattern.format(c,
-                                                       o['balance'], o['available'], o['frozen'])
-
-                        currencies.remove(c)
-                        if 0 == len(currencies):
-                            break
-
-            print(res_str)
+            self.currencies = arg.split(' ')
 
         self.__handle_aio_result(
-            self.fcoin_obj.query_trading_balance(), print_tb)
+            self.fcoin_obj.query_trading_balance(), self.__print_balance_func)
 
     def do_wb(self, arg):
         '''Query wallet balance
@@ -131,37 +136,11 @@ type ? to list the available cmds'''
             # query btc and tf balance of wallet 
             :>>wb btc ft
         '''
-        currencies = []
         if arg:
-            currencies = arg.split(' ')
-
-        def print_wb(state_code, json_obj):
-            if 'status' not in json_obj or 0 != json_obj['status']:
-                print(json_obj)
-                return
-            res_str = ''
-            line_pattern = '{:6}:b:{:},a:{},f:{}\n'
-
-            if 0 == len(currencies):
-                for o in json_obj['data']:
-                    if '0.000000000000000000' != o['available']:
-                        res_str += line_pattern.format(o['currency'],
-                                                       o['balance'], o['available'], o['frozen'])
-            else:
-                for o in json_obj['data']:
-                    c = o['currency']
-                    if c in currencies:
-                        res_str += line_pattern.format(c,
-                                                       o['balance'], o['available'], o['frozen'])
-
-                        currencies.remove(c)
-                        if 0 == len(currencies):
-                            break
-
-            print(res_str)
+            self.currencies = arg.split(' ')
 
         self.__handle_aio_result(
-            self.fcoin_obj.query_wallet_balance(), print_wb)
+            self.fcoin_obj.query_wallet_balance(), self.__print_balance_func)
 
     def do_w2t(self, arg):
         '''Transfer assets from mywallet to trading account
@@ -571,7 +550,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             await fd.close()
 
         asyncio.run(async_f(self.wsfeeder, args[0]+'usdt', float(args[1])))
-        print('alarm at price:',args[1])
+        print('alarm at price:', args[1])
         # ending when condition is met
         self.__fire_alarm()
 

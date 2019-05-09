@@ -13,8 +13,10 @@ GET = 'GET'
 
 
 class FcoinAPI():
-    def __init__(self, key='', secret='', proxy=None):
+    def __init__(self, elp, key='', secret='', proxy=None):
+
         api_address = 'api.fcoin.com'
+        crt_path = 'sca1b.crt'
 
         self.http = 'https://%s/v2/' % api_address
         self.http_orders = self.http+'orders/'
@@ -24,7 +26,12 @@ class FcoinAPI():
         self.secret = secret.encode('utf-8')
         self.proxy = proxy
         self.sslcontext = ssl.create_default_context(
-            ssl.Purpose.CLIENT_AUTH, capath='sca1b.crt')
+            ssl.Purpose.CLIENT_AUTH, capath=crt_path)
+        
+        self.sess = aiohttp.ClientSession(loop=elp)
+
+    async def close_sess(self):
+        await self.sess.close()
 
     async def signed_request(self, method, url, **params):
         param = ''
@@ -55,10 +62,10 @@ class FcoinAPI():
             'FC-ACCESS-TIMESTAMP': timestamp
         }
 
-        async with aiohttp.ClientSession() as sess:
-            async with sess.request(method, url, ssl=self.sslcontext,
-                                    proxy=self.proxy, headers=headers, json=params) as resp:
-                return resp.status, await resp.json(content_type=None)
+        #async with aiohttp.ClientSession() as sess:
+        async with self.sess.request(method, url, ssl=self.sslcontext,
+                                proxy=self.proxy, headers=headers, json=params) as resp:
+            return resp.status, await resp.json(content_type=None)
 
     async def public_request(self, method, url, **params):
         param = ''
