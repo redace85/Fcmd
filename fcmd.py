@@ -36,10 +36,10 @@ type ? to list the available cmds'''
 
         self.eloop = asyncio.get_event_loop()
 
-        self.fcoin_obj = aiofcoin.FcoinAPI( self.eloop,
-            config.key, config.secret, config.proxy)
+        self.fcoin_obj = aiofcoin.FcoinAPI(self.eloop,
+                                           config.key, config.secret, config.proxy)
 
-        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(config.proxy)
+        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop, config.proxy)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
         self.order_list_abbr = {'s': 'submitted',
@@ -88,13 +88,13 @@ type ? to list the available cmds'''
             for o in json_obj['data']:
                 if '0.000000000000000000' != o['available']:
                     res_str += line_pattern.format(o['currency'],
-                                                    o['balance'], o['available'], o['frozen'])
+                                                   o['balance'], o['available'], o['frozen'])
         else:
             for o in json_obj['data']:
                 c = o['currency']
                 if c in self.currencies:
                     res_str += line_pattern.format(c,
-                                                    o['balance'], o['available'], o['frozen'])
+                                                   o['balance'], o['available'], o['frozen'])
 
                     self.currencies.remove(c)
                     if 0 == len(self.currencies):
@@ -543,13 +543,16 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             return
 
         async def async_f(fd, trading_pair, target_price):
-            async for jo in fd.feeding('ticker.'+trading_pair):
+
+            await fd.con_sub('ticker.'+trading_pair)
+            async for jo in fd.feed_stream():
                 print(jo['ticker'])
                 if target_price == float(jo['ticker'][0]):
                     break
             await fd.close()
 
-        asyncio.run(async_f(self.wsfeeder, args[0]+'usdt', float(args[1])))
+        self.eloop.run_until_complete(
+            async_f(self.wsfeeder, args[0]+'usdt', float(args[1])))
         print('alarm at price:', args[1])
         # ending when condition is met
         self.__fire_alarm()
@@ -561,7 +564,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
         try:
             import exp
 
-            exp.call(arg)
+            exp.call(self.fcoin_obj, arg)
             print('exp result above')
         except ImportError:
             print('No exp found!')

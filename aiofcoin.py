@@ -62,7 +62,6 @@ class FcoinAPI():
             'FC-ACCESS-TIMESTAMP': timestamp
         }
 
-        #async with aiohttp.ClientSession() as sess:
         async with self.sess.request(method, url, ssl=self.sslcontext,
                                 proxy=self.proxy, headers=headers, json=params) as resp:
             return resp.status, await resp.json(content_type=None)
@@ -82,10 +81,9 @@ class FcoinAPI():
             if param:
                 url = url + '?' + param
 
-        async with aiohttp.ClientSession() as sess:
-            async with sess.request(method, url, ssl=self.sslcontext,
-                                    proxy=self.proxy, json=params) as resp:
-                return resp.status, await resp.json(content_type=None)
+        async with self.sess.request(method, url, ssl=self.sslcontext,
+                                proxy=self.proxy, json=params) as resp:
+            return resp.status, await resp.json(content_type=None)
 
     async def query_trading_balance(self):
         """trading account balance"""
@@ -131,6 +129,10 @@ class FcoinAPI():
         url = self.http_orders
         params = {'symbol': symbol, 'limit': limit, 'states': states}
         return await self.signed_request(GET, url, **params)
+
+    async def query_order_by_id(self, order_id):
+        url = self.http_orders+order_id
+        return await self.signed_request(GET, url)
 
     async def query_order_match_results(self, order_id):
         url = self.http_orders+order_id+'/match-results'
