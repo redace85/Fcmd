@@ -111,5 +111,6 @@ config.py
 # experiment dir
 exp/
 
-# alarm mp3 file
+# alarm files
 alarm/alarm.mp3
+alarm/alarm.scpt

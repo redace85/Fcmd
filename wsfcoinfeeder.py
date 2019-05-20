@@ -13,7 +13,7 @@ class WSFcoinFeeder():
         self.proxy = proxy
         self.ws = None
 
-        crt_path = '../sca1b.crt'
+        crt_path = 'sca1b.crt'
         self.sslcontext = ssl.create_default_context(
             ssl.Purpose.CLIENT_AUTH, capath=crt_path)
 

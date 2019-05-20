@@ -125,7 +125,7 @@ class FcoinAPI():
         url = self.http_market+'all-tickers'
         return await self.public_request(GET, url)
 
-    async def query_orders(self, symbol, states='submitted', limit=20):
+    async def query_orders(self, symbol, states='submitted,partial_filled', limit=20):
         url = self.http_orders
         params = {'symbol': symbol, 'limit': limit, 'states': states}
         return await self.signed_request(GET, url, **params)

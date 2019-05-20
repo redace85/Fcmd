@@ -54,7 +54,8 @@ type ? to list the available cmds'''
     def do_exit(self, arg):
         '''Exit Fcmd, shorthand: x'''
         print('releasing env resource...')
-        self.eloop.run_until_complete(self.fcoin_obj.close_sess())
+        self.eloop.run_until_complete(
+            asyncio.gather(self.fcoin_obj.close_sess(), self.wsfeeder.close()))
         print('Bye')
         return True
 
@@ -106,12 +107,9 @@ type ? to list the available cmds'''
         a_file = './alarm/alarm.mp3'
         if os.path.isfile(a_file) and sys.platform == 'darwin':
             # MAC OS
+            os.system('osascript ./alarm/alarm.scpt')
             os.system('afplay '+a_file)
         else:
-            print('\7')
-            time.sleep(1)
-            print('\7')
-            time.sleep(1)
             print('\7')
 
     def do_tb(self, arg):
@@ -391,7 +389,7 @@ type ? to list the available cmds'''
             return
         self.order_pos_cache.clear()
         res_str = ''
-        lp = 'p{}->{} {} s:{} {}_{} am:{:.2f} fa:{:.2f}\n\
+        lp = 'p{}->{} {} s:{} {}_{} am:{:.4f} fa:{:.4f}\n\
 p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
         for i, o in enumerate(json_obj['data']):
             res_str += lp.format(i, time.ctime(o['created_at']/1000),
@@ -400,10 +398,11 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
                                  o['price'], o['executed_value'], o['fill_fees'], o['fees_income'])
             self.order_pos_cache.append(o['id'])
         res_str += 'position cached!!!'
+        print(self.order_pos_cache)
         print(res_str)
 
     def do_ol(self, arg):
-        '''List orders of currency/usdt pair
+        '''List orders of symbol
         order position will be cached,and be used by other cmd etc:omr
         Args:
             currency: name of the crypto currency
@@ -411,9 +410,9 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             limit: number of information, default 20
         Example:
             # list 20 infos of submitted orders of btcusdt
-            :>>ol btc
+            :>>ol btcusdt
             # list 10 infos of submitted and filled orders
-            :>>ol btc sf 10
+            :>>ol btcusdt sf 10
         '''
         if not arg:
             print('argments is needed')
@@ -423,7 +422,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
         params = dict()
         for i, ar in enumerate(args):
             if 0 == i:
-                params['symbol'] = args[i]+'usdt'
+                params['symbol'] = args[i]
             elif 1 == i:
                 st_list = list()
                 for c in args[i]:
@@ -496,15 +495,15 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             self.order_pos_cache[pos]), self.__common_print_func)
 
     def do_oc(self, arg):
-        '''Create order of currency/usdt pair
+        '''Create order of symbol
         Args:
             currency: name of the crypto currency
             op: (lb)limit buy; (mb) market buy; (ls)limit sell; (ms)market sell
             price: the price
             amount: amount of currency to operate
         Example:
-            # limit sell 900 ft at price 0.10100
-            :>>oc ft ls 0.10100 900
+            # limit sell 900 ftusdt at price 0.10100
+            :>>oc ftusdt ls 0.10100 900
         '''
         if not arg:
             print('argments is needed')
@@ -515,7 +514,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             print('4 args are needed')
             return
 
-        params = {'symbol': args[0]+'usdt',
+        params = {'symbol': args[0],
                   'price': args[2], 'amount': args[3]}
 
         for c in args[1]:
@@ -527,32 +526,40 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
     def do_alat(self, arg):
         '''Alarm at specific price of a trading pair
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
             price: the price
+            op: (m)more or (l)less
         Example:
-            # alarm at 0.10100 of ftusdt
-            :>>alat ft 0.10100
+            # alarm if more than 0.10100 
+            :>>alat ftusdt 0.10100 m
         '''
         if not arg:
             print('argments is needed')
             return
 
         args = arg.split(' ')
-        if 2 != len(args):
-            print('2 args are needed')
+        if 3 != len(args):
+            print('3 args are needed')
             return
 
-        async def async_f(fd, trading_pair, target_price):
-
+        async def async_f(fd, trading_pair, target_price, op):
+            print('tp:',target_price)
             await fd.con_sub('ticker.'+trading_pair)
             async for jo in fd.feed_stream():
                 print(jo['ticker'])
-                if target_price == float(jo['ticker'][0]):
+                ticker_price = float(jo['ticker'][0])
+                if op=='m':
+                    if target_price <= ticker_price: 
+                        break
+                elif op=='l':
+                    if target_price >= ticker_price: 
+                        break
+                else:
+                    print('unknown op',op)
                     break
-            await fd.close()
 
         self.eloop.run_until_complete(
-            async_f(self.wsfeeder, args[0]+'usdt', float(args[1])))
+            async_f(self.wsfeeder, args[0], float(args[1]), arg[2]))
         print('alarm at price:', args[1])
         # ending when condition is met
         self.__fire_alarm()
