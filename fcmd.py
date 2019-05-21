@@ -398,7 +398,6 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
                                  o['price'], o['executed_value'], o['fill_fees'], o['fees_income'])
             self.order_pos_cache.append(o['id'])
         res_str += 'position cached!!!'
-        print(self.order_pos_cache)
         print(res_str)
 
     def do_ol(self, arg):

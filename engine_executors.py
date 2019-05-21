@@ -56,9 +56,9 @@ class FcoinExecutor():
             self.fcoin_obj.submit_cancel_order(order_id))
 
         if 'status' not in json_obj or 0 != json_obj['status']:
-            return (False, None)
+            return False
         else:
-            return (True, json_obj['data'])
+            return True
 
     def query_order_state(self, order_id):
         (state_code, json_obj) = self.eloop.run_until_complete(
