@@ -69,8 +69,3 @@ class FcoinExecutor():
         else:
             return (True, json_obj['data']['state'])
 
-
-if __name__ == '__main__':
-    elp = asyncio.get_event_loop()
-    exe = FcoinExecutor(elp)
-    print(exe.query_order_state('gs8Vn0DSgtYQ7hu5zwZDQ54upRWGQIz8ij7f84j-PIBZ21KNYX26gjtBfMWgsjRR7sNUdV9-OTjCEjmLrDUJPw=='))
