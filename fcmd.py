@@ -260,18 +260,22 @@ type ? to list the available cmds'''
     def do_mtk(self, arg):
         '''Query ticker information of currency/usdt pair
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
         Example:
-            :>>mtk btc
+            :>>mtk btcusdt
         '''
         def print_mtk(state_code, json_obj):
             if 'status' not in json_obj or 0 != json_obj['status']:
                 print(json_obj)
                 return
             d = json_obj['data']
+            tic = d['ticker']
             res_str = 'seq:{} type:{}\n'.format(d['seq'], d['type'])
             res_str += 'np:{} nv:{}\nbp1:{} bv1:{} sp1:{} sv1:{}\n\
-24bp:{} 24hp:{} 24lp:{}\n24cv:{} 24uv:{}\n'.format(*d['ticker'])
+24bp:{} 24hp:{} 24lp:{}\n24cv:{} 24uv:{}\n'.format(*tic)
+
+            ratio = (float(tic[0])-float(tic[-5]))*100 / float(tic[-5])
+            res_str += 'ratio: {:.2f}%'.format(ratio)
 
             print(res_str)
 
@@ -280,16 +284,16 @@ type ? to list the available cmds'''
             return
 
         self.__handle_aio_result(
-            self.fcoin_obj.query_market_ticker(arg+'usdt'), print_mtk)
+            self.fcoin_obj.query_market_ticker(arg), print_mtk)
 
     def do_mdp(self, arg):
         '''Query depth information of currency/usdt pair
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
             depth: number of depth information 20 or 150
         Example:
             # query L20 depth info of btcusdt
-            :>>mdp btc 20
+            :>>mdp btcusdt 20
         '''
         def print_mdp(state_code, json_obj):
             if 'status' not in json_obj or 0 != json_obj['status']:
@@ -317,16 +321,16 @@ type ? to list the available cmds'''
             return
 
         self.__handle_aio_result(self.fcoin_obj.query_market_depth(
-            args[0]+'usdt', 'L'+args[1],), print_mdp)
+            args[0], 'L'+args[1],), print_mdp)
 
     def do_mtr(self, arg):
         '''Query trade information of currency/usdt pair
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
             limit: number of information
         Example:
             # query 10 traded info of btcusdt
-            :>>mtr btc 10
+            :>>mtr btcusdt 10
         '''
         def print_mtr(state_code, json_obj):
             if 'status' not in json_obj or 0 != json_obj['status']:
@@ -348,17 +352,17 @@ type ? to list the available cmds'''
             return
 
         self.__handle_aio_result(self.fcoin_obj.query_market_trades(
-            args[0]+'usdt', int(args[1])), print_mtr)
+            args[0], int(args[1])), print_mtr)
 
     def do_mca(self, arg):
         '''Query trade candles info of currency/usdt pair
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
             resolution: M1 M3 M5 M15 M30 H1 H4 H6 D1 W1
             limit: number of information
         Example:
             # query 10 infos of candle.btcusdt.M15
-            :>>mca btc M15 10
+            :>>mca btcusdt M15 10
         '''
         def print_mca(state_code, json_obj):
             if 'status' not in json_obj or 0 != json_obj['status']:
@@ -381,7 +385,7 @@ type ? to list the available cmds'''
             return
 
         self.__handle_aio_result(self.fcoin_obj.query_market_candle(
-            args[0]+'usdt', args[1], int(args[2])), print_mca)
+            args[0], args[1], int(args[2])), print_mca)
 
     def __handle_ol(self, state_code, json_obj):
         if 'status' not in json_obj or 0 != json_obj['status']:
@@ -404,7 +408,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
         '''List orders of symbol
         order position will be cached,and be used by other cmd etc:omr
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
             states: (s)submitted,(f)filled,(c)canceled, default f
             limit: number of information, default 20
         Example:
@@ -496,7 +500,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
     def do_oc(self, arg):
         '''Create order of symbol
         Args:
-            currency: name of the crypto currency
+            symbol: trading symbol
             op: (lb)limit buy; (mb) market buy; (ls)limit sell; (ms)market sell
             price: the price
             amount: amount of currency to operate

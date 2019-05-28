@@ -52,7 +52,7 @@ class WSFcoinFeeder():
                 yield jo
             # ignore the rest kind of msg
 
-    async def _send_ws_heartbeat_with_delay(self, ws, delay=30):
+    async def _send_ws_heartbeat_with_delay(self, ws, delay=10):
         await asyncio.sleep(delay)
 
         lt = int(time.time()*1000)
