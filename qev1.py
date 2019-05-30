@@ -2,6 +2,7 @@
 #coding=utf-8
 import asyncio
 import signal
+import logging
 import multiprocessing
 
 
@@ -14,18 +15,24 @@ class QuantEngine():
 
         from wsfcoinfeeder import WSFcoinFeeder
         import config
+        import time
 
         async def async_f(elp):
             wsfeeder = WSFcoinFeeder(elp, config.proxy)
-            await wsfeeder.con_sub(strategy_obj.topic)
-            async for jo in wsfeeder.feed_stream():
-                d = {'t': 'feeder', 'd': strategy_obj.reform_data(jo)}
-                mq.put(d)
+            while True:
+                # never stop feeder
+                await wsfeeder.con_sub(strategy_obj.topic)
+                async for jo in wsfeeder.feed_stream():
+                    d = {'t': 'feeder', 'd': strategy_obj.reform_data(jo)}
+                    mq.put(d)
 
             await wsfeeder.close()
 
         eloop = asyncio.get_event_loop()
-        eloop.run_until_complete(async_f(eloop))
+        try:
+            eloop.run_until_complete(async_f(eloop))
+        except Exception as e:
+            logging.error('Catched and exit:',e)
 
 
     #
@@ -40,13 +47,13 @@ class QuantEngine():
 
         # reset sigint handler cancel all order when terminate
         def sigint_handler(n, f):
-            print('exe cancel order...')
+            logging.warning('sigint cancel order...')
 
             sig_ol = strategy_obj.sigint_excmd()
             # terminate signal at the end
             sig_ol.append({'o': 'x', 'p': -1, 'd': 'sigint'})
             s_pip.send(sig_ol)
-            print('waiting 4 feeder signal...')
+            logging.info('waiting 4 feeder signal...')
 
         # reset parent process signal handler
         signal.signal(signal.SIGINT, sigint_handler)
@@ -61,11 +68,11 @@ class QuantEngine():
                 if peek_data['t'] != 'feeder':
                     non_feeder_buffer.append(peek_data)
                 else:
-                    print('!!!newer d replaced')
+                    logging.info('!!!newer d replaced')
                     d = peek_data
 
             if non_feeder_buffer:
-                print('non_feeder_buffer refill')
+                logging.info('non_feeder_buffer refill')
                 for b in non_feeder_buffer:
                     mq.put(b)
                 non_feeder_buffer.clear()
@@ -108,7 +115,7 @@ class QuantEngine():
         while p_running:
             order_res_list = []
             ol = r_pip.recv()
-            print('exe_recv:', ol)
+            logging.info('exe_recv:{}'.format(ol))
             for o in ol:
                 o_res = {}
                 o_res['p'] = o['p']
@@ -135,7 +142,8 @@ class QuantEngine():
                             s_order_buffer[o['p']])
                 elif 'x' == o['o']:
                     o_res['r'] = o['d']
-                    p_running = False
+                    if 'sigint' == o['d']:
+                        p_running = False
                 order_res_list.append(o_res)
 
             d = {'t': 'exeback', 'd': order_res_list}
@@ -148,17 +156,17 @@ class QuantEngine():
         mq = multiprocessing.Queue(9)
         r_p, s_p = multiprocessing.Pipe(False)
 
-        self.feeder_p = multiprocessing.Process(
+        self.feeder_p = multiprocessing.Process(name='qe_feeder',
             target=self.feeder_process, args=(strategy_obj, mq))
-        self.strategies_p = multiprocessing.Process(
+        self.strategies_p = multiprocessing.Process(name='qe_strategies',
             target=self.strategies_process, args=(strategy_obj, mq, s_p))
-        self.executor_p = multiprocessing.Process(
+        self.executor_p = multiprocessing.Process(name='qe_executor',
             target=self.executor_process, args=(strategy_obj, mq, r_p))
 
-        print('engine construction finished')
+        logging.info('engine construction finished')
     
     def run(self):
-        print('engine startup suceed...')
+        logging.info('engine startup suceed...')
         self.feeder_p.start()
         self.strategies_p.start()
         self.executor_p.start()
@@ -166,17 +174,18 @@ class QuantEngine():
         self.strategies_p.join()
         self.executor_p.join()
         self.feeder_p.terminate()
-        print('engine terminated')
+        logging.info('engine terminated')
 
 
 
 if __name__ == '__main__':
     print('This is the V1 quantitive engine~')
+    logging.basicConfig(filename='qev1.log',format='%(levelname)s:%(message)s',
+                        level=logging.WARN)
     import strategy_pos
 
-    strategy_obj = strategy_pos.Position_Strategy()
+    strategy_obj = strategy_pos.Position_Strategy(mock=False)
     strategy_obj.init_strategy_data()
 
     qe = QuantEngine(strategy_obj)
     qe.run()
-

@@ -42,8 +42,8 @@ type ? to list the available cmds'''
         self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop, config.proxy)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
-        self.order_list_abbr = {'s': 'submitted',
-                                'f': 'filled', 'c': 'canceled'}
+        self.order_list_abbr = {'s': 'submitted','f': 'filled',
+         'c': 'canceled', 'p': 'partial_canceled'}
         self.order_create_abbr = {'b': {'side': 'buy'}, 's': {'side': 'sell'},
                                   'l': {'type': 'limit'}, 'm': {'type': 'market'}}
         self.order_pos_cache = list()
@@ -275,7 +275,7 @@ type ? to list the available cmds'''
 24bp:{} 24hp:{} 24lp:{}\n24cv:{} 24uv:{}\n'.format(*tic)
 
             ratio = (float(tic[0])-float(tic[-5]))*100 / float(tic[-5])
-            res_str += 'ratio: {:.2f}%'.format(ratio)
+            res_str += 'ratio: {:.5f}% \n'.format(ratio)
 
             print(res_str)
 
@@ -409,7 +409,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
         order position will be cached,and be used by other cmd etc:omr
         Args:
             symbol: trading symbol
-            states: (s)submitted,(f)filled,(c)canceled, default f
+            states: (s)submitted,(f)filled,(c)canceled,(p)partial_canceled default f
             limit: number of information, default 20
         Example:
             # list 20 infos of submitted orders of btcusdt
