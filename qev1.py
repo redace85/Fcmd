@@ -33,6 +33,9 @@ class QuantEngine():
             eloop.run_until_complete(async_f(eloop))
         except Exception as e:
             logging.error('Catched and exit:',e)
+            # using exeback to quit
+            x = {'t': 'exeback', 'd': {'o': 'x', 'p': -1, 'r': 'feeder_err'}}
+            mq.put(x)
 
 
     #
@@ -49,7 +52,7 @@ class QuantEngine():
         def sigint_handler(n, f):
             logging.warning('sigint cancel order...')
 
-            sig_ol = strategy_obj.sigint_excmd()
+            sig_ol = strategy_obj.clean_excmd()
             # terminate signal at the end
             sig_ol.append({'o': 'x', 'p': -1, 'd': 'sigint'})
             s_pip.send(sig_ol)
@@ -90,6 +93,9 @@ class QuantEngine():
                 # }...]
                 for order_result in d['d']:
                     p_running &= strategy_obj.update_status_from_exeback(order_result)
+        if strategy_obj.whether_after_clean():
+            ol = strategy_obj.clean_excmd()
+            s_pip.send(ol)
 
     #
     # executor process function
@@ -179,11 +185,11 @@ class QuantEngine():
 
 if __name__ == '__main__':
     print('This is the V1 quantitive engine~')
-    logging.basicConfig(filename='qev1.log',format='%(levelname)s:%(message)s',
-                        level=logging.INFO)
+    logging.basicConfig(filename='qev1.log',filemode='w',
+        format='%(levelname)s:%(message)s', level=logging.WARN)
     import strategy_pos
 
-    strategy_obj = strategy_pos.Position_Strategy(mock=True)
+    strategy_obj = strategy_pos.Position_Strategy(mock=False)
     strategy_obj.init_strategy_data()
 
     qe = QuantEngine(strategy_obj)
