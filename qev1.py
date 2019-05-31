@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 #coding=utf-8
 import asyncio
 import signal
@@ -177,14 +177,13 @@ class QuantEngine():
         logging.info('engine terminated')
 
 
-
 if __name__ == '__main__':
     print('This is the V1 quantitive engine~')
     logging.basicConfig(filename='qev1.log',format='%(levelname)s:%(message)s',
-                        level=logging.WARN)
+                        level=logging.INFO)
     import strategy_pos
 
-    strategy_obj = strategy_pos.Position_Strategy(mock=False)
+    strategy_obj = strategy_pos.Position_Strategy(mock=True)
     strategy_obj.init_strategy_data()
 
     qe = QuantEngine(strategy_obj)
