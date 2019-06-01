@@ -33,8 +33,8 @@ class QuantEngine():
             eloop.run_until_complete(async_f(eloop))
         except Exception as e:
             logging.error('Catched and exit:',e)
-            # using exeback to quit
-            x = {'t': 'exeback', 'd': {'o': 'x', 'p': -1, 'r': 'feeder_err'}}
+            # feeder err
+            x = {'t': 'feeder', 'd': 'err'}
             mq.put(x)
 
 
@@ -52,6 +52,7 @@ class QuantEngine():
         def sigint_handler(n, f):
             logging.warning('sigint cancel order...')
 
+            # clean cmd
             sig_ol = strategy_obj.clean_excmd()
             # terminate signal at the end
             sig_ol.append({'o': 'x', 'p': -1, 'd': 'sigint'})
@@ -65,6 +66,14 @@ class QuantEngine():
         p_running = True
         while p_running:
             d = mq.get()
+            # feeder err
+            if d['t'] == 'feeder' and d['d']=='err':
+                # clean cmd
+                cls_ol = strategy_obj.clean_excmd()
+                # terminate signal at the end
+                cls_ol.append({'o': 'x', 'p': -1, 'd': 'feeder_err'})
+                s_pip.send(cls_ol)
+                continue
             while not mq.empty() and d['t'] == 'feeder':
                 # only lastest feeder msg matters
                 peek_data = mq.get()
@@ -93,9 +102,6 @@ class QuantEngine():
                 # }...]
                 for order_result in d['d']:
                     p_running &= strategy_obj.update_status_from_exeback(order_result)
-        if strategy_obj.whether_after_clean():
-            ol = strategy_obj.clean_excmd()
-            s_pip.send(ol)
 
     #
     # executor process function
