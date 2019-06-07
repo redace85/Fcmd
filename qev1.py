@@ -203,11 +203,11 @@ if __name__ == '__main__':
     else:
         stream = sys.stdout
     logging.basicConfig(stream = stream,
-                        format='%(levelname)s:%(message)s', level=logging.INFO)
+                        format='%(levelname)s:%(message)s', level=logging.WARN)
 
     import strategy_pos
 
-    strategy_obj = strategy_pos.Position_Strategy(mock=True)
+    strategy_obj = strategy_pos.Position_Strategy(mock=False)
     strategy_obj.init_strategy_data()
 
     qe = QuantEngine(strategy_obj)
