@@ -41,7 +41,7 @@ class WSFcoinFeeder():
             return
         async for msg in self.ws:
             jo = msg.json()
-            #print('a:',jo)
+            #print('jo:',jo)
 
             if jo['type'] == 'ping':
                 asyncio.create_task(
@@ -52,6 +52,19 @@ class WSFcoinFeeder():
                 yield jo
             # ignore the rest kind of msg
 
+    async def all_tickers_stream(self):
+        if self.ws is None:
+            return
+        async for msg in self.ws:
+            jo = msg.json()
+
+            if 'topic' in jo and 'all-tickers' == jo['topic']:
+                yield jo
+            elif jo['type'] == 'ping':
+                asyncio.create_task(
+                    self._send_ws_heartbeat_with_delay(self.ws))
+                continue
+
     async def _send_ws_heartbeat_with_delay(self, ws, delay=10):
         await asyncio.sleep(delay)
 
@@ -59,14 +72,13 @@ class WSFcoinFeeder():
         d = {"cmd": "ping", "args": [lt], "id": "fcmd_id"}
         await ws.send_json(d)
 
-    async def c_sub(self, topics):
-        if not isinstance(topics, list):
-            self.topics = [topics]
-        else:
-            self.topics = topics
-
-        o = {"cmd": "sub", "args": self.topics, "id": "fcmd_id"}
-        await self.ws.send_json(o)
+    async def req_topic(self, topic, limit=10):
+        '''
+        only candle and market trade record works
+        '''
+        if self.ws:
+            o = {"cmd": "req", "args": [topic,limit], "id": "fcmd_id"}
+            await self.ws.send_json(o)
 
     async def close(self):
         if self.ws and not self.ws.closed:

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3.7
-#coding=utf-8
+# coding=utf-8
 import asyncio
 import signal
 import logging
+import sys
 import multiprocessing
 
 
@@ -32,11 +33,10 @@ class QuantEngine():
         try:
             eloop.run_until_complete(async_f(eloop))
         except Exception as e:
-            logging.error('Catched and exit:',e)
+            logging.error('Catched and exit:', e)
             # feeder err
             x = {'t': 'feeder', 'd': 'err'}
             mq.put(x)
-
 
     #
     # Strategies process function
@@ -67,7 +67,7 @@ class QuantEngine():
         while p_running:
             d = mq.get()
             # feeder err
-            if d['t'] == 'feeder' and d['d']=='err':
+            if d['t'] == 'feeder' and d['d'] == 'err':
                 # clean cmd
                 cls_ol = strategy_obj.clean_excmd()
                 # terminate signal at the end
@@ -101,7 +101,8 @@ class QuantEngine():
                 # 'r'(result), - data structure depends on operation
                 # }...]
                 for order_result in d['d']:
-                    p_running &= strategy_obj.update_status_from_exeback(order_result)
+                    p_running &= strategy_obj.update_status_from_exeback(
+                        order_result)
 
     #
     # executor process function
@@ -123,8 +124,7 @@ class QuantEngine():
         # order buffer {pos:id}
         s_order_buffer = {}
 
-        p_running = True
-        while p_running:
+        while True:
             order_res_list = []
             ol = r_pip.recv()
             logging.info('exe_recv:{}'.format(ol))
@@ -141,7 +141,8 @@ class QuantEngine():
                         o_res['r'] = executor.submit_cancel(
                             s_order_buffer[o['p']])
                 elif 'c' == o['o']:
-                    (b_res, order_id) = executor.create_order(strategy_obj.symbol, *(o['d']))
+                    (b_res, order_id) = executor.create_order(
+                        strategy_obj.symbol, *(o['d']))
                     if b_res:
                         s_order_buffer[o['p']] = order_id
                     o_res['r'] = b_res
@@ -154,8 +155,6 @@ class QuantEngine():
                             s_order_buffer[o['p']])
                 elif 'x' == o['o']:
                     o_res['r'] = o['d']
-                    if 'sigint' == o['d']:
-                        p_running = False
                 order_res_list.append(o_res)
 
             d = {'t': 'exeback', 'd': order_res_list}
@@ -169,14 +168,14 @@ class QuantEngine():
         r_p, s_p = multiprocessing.Pipe(False)
 
         self.feeder_p = multiprocessing.Process(name='qe_feeder',
-            target=self.feeder_process, args=(strategy_obj, mq))
+                                                target=self.feeder_process, args=(strategy_obj, mq))
         self.strategies_p = multiprocessing.Process(name='qe_strategies',
-            target=self.strategies_process, args=(strategy_obj, mq, s_p))
+                                                    target=self.strategies_process, args=(strategy_obj, mq, s_p))
         self.executor_p = multiprocessing.Process(name='qe_executor',
-            target=self.executor_process, args=(strategy_obj, mq, r_p))
+                                                  target=self.executor_process, args=(strategy_obj, mq, r_p))
 
         logging.info('engine construction finished')
-    
+
     def run(self):
         logging.info('engine startup suceed...')
         self.feeder_p.start()
@@ -184,18 +183,31 @@ class QuantEngine():
         self.executor_p.start()
         # join forever
         self.strategies_p.join()
-        self.executor_p.join()
         self.feeder_p.terminate()
+        self.executor_p.terminate()
         logging.info('engine terminated')
 
 
 if __name__ == '__main__':
-    print('This is the V1 quantitive engine~')
-    logging.basicConfig(filename='qev1.log',filemode='w',
-        format='%(levelname)s:%(message)s', level=logging.WARN)
+    '''
+    the previous engine names~~
+
+    pt1engin: prototype qe
+    pt2engin: prototype qe
+    V1: first version of qe
+    '''
+    print('This is the V1A1 quantitive engine~')
+    use_stdout = False
+    if not use_stdout:
+        stream = open('qev1.log',mode='w')
+    else:
+        stream = sys.stdout
+    logging.basicConfig(stream = stream,
+                        format='%(levelname)s:%(message)s', level=logging.INFO)
+
     import strategy_pos
 
-    strategy_obj = strategy_pos.Position_Strategy(mock=False)
+    strategy_obj = strategy_pos.Position_Strategy(mock=True)
     strategy_obj.init_strategy_data()
 
     qe = QuantEngine(strategy_obj)

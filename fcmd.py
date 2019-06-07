@@ -409,7 +409,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
         order position will be cached,and be used by other cmd etc:omr
         Args:
             symbol: trading symbol
-            states: (s)submitted,(f)filled,(c)canceled,(p)partial_canceled default f
+            states: (s)submitted,(f)filled,(c)canceled,(p)partial_canceled default s
             limit: number of information, default 20
         Example:
             # list 20 infos of submitted orders of btcusdt
@@ -549,7 +549,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             print('tp:',target_price)
             await fd.con_sub('ticker.'+trading_pair)
             async for jo in fd.feed_stream():
-                print(jo['ticker'])
+                print(*jo['ticker'],end='\r')
                 ticker_price = float(jo['ticker'][0])
                 if op=='m':
                     if target_price <= ticker_price: 
@@ -558,12 +558,11 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
                     if target_price >= ticker_price: 
                         break
                 else:
-                    print('unknown op',op)
+                    print('unknown op:{}'.format(op))
                     break
-
+            print('\nalat:',target_price)
         self.eloop.run_until_complete(
-            async_f(self.wsfeeder, args[0], float(args[1]), arg[2]))
-        print('alarm at price:', args[1])
+            async_f(self.wsfeeder, args[0], float(args[1]), args[2]))
         # ending when condition is met
         self.__fire_alarm()
 
