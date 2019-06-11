@@ -3,30 +3,16 @@ import asyncio
 import random
 import time
 
-class MockExecutor():
-
-    def __init__(self, elp, delay=0.5):
-        self.delay = delay
-
-    def create_order(self, symbol, op, price, amount):
-        time.sleep(self.delay)
-        return (True,'mock id'+str(random.randint(10,999)))
-
-    def submit_cancel(self, order_id):
-        time.sleep(self.delay)
-        return True
-
-    def query_order_state(self, order_id):
-        time.sleep(self.delay)
-        return (True,'submitted')
 
 class FcoinExecutor():
 
-    def __init__(self, elp):
+    def __init__(self, elp, mock_trade=False, delay=3):
         # init aiofcoin
         from aiofcoin import FcoinAPI
         import config
 
+        self.mock_trade = mock_trade
+        self.delay = delay
         self.eloop = elp
         self.fcoin_obj = FcoinAPI( elp,
                 config.key, config.secret, config.proxy)
@@ -37,6 +23,11 @@ class FcoinExecutor():
         self.eloop.run_until_complete(self.fcoin_obj.close_sess())
 
     def create_order(self, symbol, op, price, amount):
+        # mock trade
+        if self.mock_trade:
+            time.sleep(self.delay)
+            return (True,'mock id'+str(random.randint(10,999)))
+
         params = {'symbol': symbol, 'price': price,
          'amount': amount, }
 
@@ -52,6 +43,11 @@ class FcoinExecutor():
             return (True, json_obj['data'])
 
     def submit_cancel(self, order_id):
+        # mock trade
+        if self.mock_trade:
+            time.sleep(self.delay)
+            return True
+
         (state_code, json_obj) = self.eloop.run_until_complete(
             self.fcoin_obj.submit_cancel_order(order_id))
 
@@ -61,6 +57,11 @@ class FcoinExecutor():
             return True
 
     def query_order_state(self, order_id):
+        # mock trade
+        if self.mock_trade:
+            time.sleep(self.delay)
+            return (True,'submitted')
+
         (state_code, json_obj) = self.eloop.run_until_complete(
             self.fcoin_obj.query_order_by_id(order_id))
 

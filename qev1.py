@@ -5,6 +5,7 @@ import signal
 import logging
 import sys
 import multiprocessing
+import config
 
 
 class QuantEngine():
@@ -15,7 +16,6 @@ class QuantEngine():
     def feeder_process(self, strategy_obj, mq):
 
         from wsfcoinfeeder import WSFcoinFeeder
-        import config
         import time
 
         async def async_f(elp):
@@ -113,14 +113,11 @@ class QuantEngine():
     # 'd'(data), - user defined data handle in this process (op, price, volume)
     # }...]
     #
-    def executor_process(self, strategy_obj, mq, r_pip):
+    def executor_process(self, mq, r_pip):
         import engine_executors
 
         elp = asyncio.get_event_loop()
-        if strategy_obj.whether_mock_trading:
-            executor = engine_executors.MockExecutor(elp)
-        else:
-            executor = engine_executors.FcoinExecutor(elp)
+        executor = engine_executors.FcoinExecutor(elp,config.mock_execution)
         # order buffer {pos:id}
         s_order_buffer = {}
 
@@ -172,7 +169,7 @@ class QuantEngine():
         self.strategies_p = multiprocessing.Process(name='qe_strategies',
                                                     target=self.strategies_process, args=(strategy_obj, mq, s_p))
         self.executor_p = multiprocessing.Process(name='qe_executor',
-                                                  target=self.executor_process, args=(strategy_obj, mq, r_p))
+                                                  target=self.executor_process, args=(mq, r_p))
 
         logging.info('engine construction finished')
 
@@ -196,18 +193,19 @@ if __name__ == '__main__':
     pt2engin: prototype qe
     V1: first version of qe
     '''
-    print('This is the V1A1 quantitive engine~')
-    use_stdout = False
-    if not use_stdout:
-        stream = open('qev1.log',mode='w')
-    else:
+    print('This is the V1A2 quantitive engine~')
+
+    if config.output_std:
         stream = sys.stdout
+    else:
+        stream = open('qev1.log',mode='w')
+
     logging.basicConfig(stream = stream,
-                        format='%(levelname)s:%(message)s', level=logging.WARN)
+                        format='%(levelname)s:%(message)s', level=config.logginglevel)
 
     import strategy_pos
 
-    strategy_obj = strategy_pos.Position_Strategy(mock=False)
+    strategy_obj = strategy_pos.Position_Strategy()
     strategy_obj.init_strategy_data()
 
     qe = QuantEngine(strategy_obj)
