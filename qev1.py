@@ -42,25 +42,16 @@ class QuantEngine():
     # Strategies process function
     #
     # mq message format {
-    # 't'(type), - feeder, exeback
+    # 't'(type), - feeder, exeback, sigint
     # 'd'(data), - user defined data handle in this process
     # }
     #
     def strategies_process(self, strategy_obj, mq, s_pip):
-
-        # reset sigint handler cancel all order when terminate
-        def sigint_handler(n, f):
-            logging.warning('sigint cancel order...')
-
-            # clean cmd
-            sig_ol = strategy_obj.clean_excmd()
-            # terminate signal at the end
-            sig_ol.append({'o': 'x', 'p': -1, 'd': 'sigint'})
-            s_pip.send(sig_ol)
-            logging.info('waiting 4 feeder signal...')
-
-        # reset parent process signal handler
-        signal.signal(signal.SIGINT, sigint_handler)
+        # send init cmd
+        init_ol = strategy_obj.init_excmd()
+        if init_ol:
+            s_pip.send(init_ol)
+            logging.info('init excmd sent')
 
         non_feeder_buffer = []
         p_running = True
@@ -68,12 +59,22 @@ class QuantEngine():
             d = mq.get()
             # feeder err
             if d['t'] == 'feeder' and d['d'] == 'err':
+                logging.error('feeder_err received')
                 # clean cmd
                 cls_ol = strategy_obj.clean_excmd()
                 # terminate signal at the end
                 cls_ol.append({'o': 'x', 'p': -1, 'd': 'feeder_err'})
                 s_pip.send(cls_ol)
                 continue
+            if d['t'] == 'sigint':
+                logging.warning('sigint received')
+                # clean cmd
+                sig_ol = strategy_obj.clean_excmd()
+                # terminate signal at the end
+                sig_ol.append({'o': 'x', 'p': -1, 'd': 'sigint'})
+                s_pip.send(sig_ol)
+                logging.info('waiting 4 feeder signal...')
+
             while not mq.empty() and d['t'] == 'feeder':
                 # only lastest feeder msg matters
                 peek_data = mq.get()
@@ -138,6 +139,7 @@ class QuantEngine():
                         o_res['r'] = executor.submit_cancel(
                             s_order_buffer[o['p']])
                 elif 'c' == o['o']:
+                    # create order 
                     (b_res, order_id) = executor.create_order(
                         strategy_obj.symbol, *(o['d']))
                     if b_res:
@@ -150,8 +152,10 @@ class QuantEngine():
                     else:
                         o_res['r'] = executor.query_order_state(
                             s_order_buffer[o['p']])
+
                 elif 'x' == o['o']:
                     o_res['r'] = o['d']
+
                 order_res_list.append(o_res)
 
             d = {'t': 'exeback', 'd': order_res_list}
@@ -170,14 +174,25 @@ class QuantEngine():
                                                     target=self.strategies_process, args=(strategy_obj, mq, s_p))
         self.executor_p = multiprocessing.Process(name='qe_executor',
                                                   target=self.executor_process, args=(mq, r_p))
-
+        self.mq = mq
         logging.info('engine construction finished')
 
+
     def run(self):
-        logging.info('engine startup suceed...')
         self.feeder_p.start()
         self.strategies_p.start()
         self.executor_p.start()
+        logging.info('engine startup suceed...')
+
+        # reset sigint handler cancel all order when terminate
+        def sigint_handler(n, f):
+            logging.warning('engine sigint~')
+            x = {'t': 'sigint', 'd': 'sigint'}
+            self.mq.put(x)
+
+        # reset parent process signal handler
+        signal.signal(signal.SIGINT, sigint_handler)
+
         # join forever
         self.strategies_p.join()
         self.feeder_p.terminate()

@@ -108,7 +108,7 @@ type ? to list the available cmds'''
         if os.path.isfile(a_file) and sys.platform == 'darwin':
             # MAC OS
             os.system('osascript ./alarm/alarm.scpt')
-            os.system('afplay '+a_file)
+            #os.system('afplay '+a_file)
         else:
             print('\7')
 
@@ -549,7 +549,12 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             print('tp:',target_price)
             await fd.con_sub('ticker.'+trading_pair)
             async for jo in fd.feed_stream():
-                print(*jo['ticker'],end='\r')
+
+                form_str = 'sq:{} '.format(jo['seq'])
+                form_str += 'p:{:6}-v:{:9} b:{:6}-{:9} s:{:6}-{:9}\
+    24:{:6} {:6} {:6}'.format(*jo['ticker'])
+
+                print(form_str,end='\r')
                 ticker_price = float(jo['ticker'][0])
                 if op=='m':
                     if target_price <= ticker_price: 
