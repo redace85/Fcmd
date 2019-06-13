@@ -114,3 +114,6 @@ exp/
 # alarm files
 alarm/alarm.mp3
 alarm/alarm.scpt
+
+# str
+strategy_*.py
