@@ -208,7 +208,7 @@ if __name__ == '__main__':
     pt2engin: prototype qe
     V1: first version of qe
     '''
-    logging.info('This is the V1A2 quantitive engine~')
+    print('This is the V1A2 quantitive engine~')
 
     if config.output_std:
         stream = sys.stdout
