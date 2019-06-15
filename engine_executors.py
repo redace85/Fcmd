@@ -70,3 +70,5 @@ class FcoinExecutor():
         else:
             return (True, json_obj['data']['state'])
 
+    def query_func_by_name(self, f_name, args):
+        pass

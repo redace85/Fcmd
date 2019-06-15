@@ -141,7 +141,7 @@ class QuantEngine():
                 elif 'c' == o['o']:
                     # create order 
                     (b_res, order_id) = executor.create_order(
-                        strategy_obj.symbol, *(o['d']))
+                        *(o['d']))
                     if b_res:
                         s_order_buffer[o['p']] = order_id
                     o_res['r'] = b_res
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     pt2engin: prototype qe
     V1: first version of qe
     '''
-    print('This is the V1A2 quantitive engine~')
+    logging.info('This is the V1A2 quantitive engine~')
 
     if config.output_std:
         stream = sys.stdout
