@@ -75,8 +75,6 @@ class FcoinAPI():
                 var_list.append('{}={}'.format(str(k[0]), str(k[1])))
             param = '&'.join(var_list)
 
-        timestamp = str(int(time.time() * 1000))
-
         if method == GET:
             if param:
                 url = url + '?' + param

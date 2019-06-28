@@ -6,7 +6,7 @@ import time
 
 class FcoinExecutor():
 
-    def __init__(self, elp, mock_trade=False, delay=3):
+    def __init__(self, elp, mock_trade=False, delay=1):
         # init aiofcoin
         from aiofcoin import FcoinAPI
         import config
@@ -37,7 +37,7 @@ class FcoinExecutor():
         (state_code, json_obj) = self.eloop.run_until_complete(
             self.fcoin_obj.create_order(**params))
 
-        if 'status' not in json_obj or 0 != json_obj['status']:
+        if 200!= state_code or 'status' not in json_obj or 0 != json_obj['status']:
             return (False, None)
         else:
             return (True, json_obj['data'])
@@ -51,12 +51,12 @@ class FcoinExecutor():
         (state_code, json_obj) = self.eloop.run_until_complete(
             self.fcoin_obj.submit_cancel_order(order_id))
 
-        if 'status' not in json_obj or 0 != json_obj['status']:
+        if 200!= state_code or 'status' not in json_obj or 0 != json_obj['status']:
             return False
         else:
             return True
 
-    def query_order_state(self, order_id):
+    def query_order(self, order_id):
         # mock trade
         if self.mock_trade:
             time.sleep(self.delay)
@@ -65,10 +65,26 @@ class FcoinExecutor():
         (state_code, json_obj) = self.eloop.run_until_complete(
             self.fcoin_obj.query_order_by_id(order_id))
 
-        if 'status' not in json_obj or 0 != json_obj['status']:
+        if 200!= state_code or 'status' not in json_obj or 0 != json_obj['status']:
             return (False, None)
         else:
-            return (True, json_obj['data']['state'])
+            return (True, json_obj['data'])
 
-    def query_func_by_name(self, f_name, args):
-        pass
+    def query_available_tb(self, symbols):
+
+        (state_code, json_obj) = self.eloop.run_until_complete(
+            self.fcoin_obj.query_trading_balance())
+
+        if 200!= state_code or 'status' not in json_obj or 0 != json_obj['status']:
+            return (False, None)
+        else:
+            a_tb_dict = dict()
+            for o in json_obj['data']:
+                c = o['currency']
+                if c in symbols:
+                    a_tb_dict[c] = o['available']
+                    symbols.remove(c)
+                    if 0 == len(symbols):
+                        break
+            
+            return (True, a_tb_dict)

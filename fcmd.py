@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.7
-#coding=utf-8
+# coding=utf-8
 from cmd import Cmd
 import time
 import os
@@ -42,8 +42,8 @@ type ? to list the available cmds'''
         self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop, config.proxy)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
-        self.order_list_abbr = {'s': 'submitted','f': 'filled',
-         'c': 'canceled', 'p': 'partial_canceled'}
+        self.order_list_abbr = {'s': 'submitted', 'f': 'filled',
+                                'c': 'canceled', 'p': 'partial_canceled'}
         self.order_create_abbr = {'b': {'side': 'buy'}, 's': {'side': 'sell'},
                                   'l': {'type': 'limit'}, 'm': {'type': 'market'}}
         self.order_pos_cache = list()
@@ -546,7 +546,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
             return
 
         async def async_f(fd, trading_pair, target_price, op):
-            print('tp:',target_price)
+            print('tp:', target_price)
             await fd.con_sub('ticker.'+trading_pair)
             async for jo in fd.feed_stream():
 
@@ -554,18 +554,18 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
                 form_str += 'p:{:6}-v:{:9} b:{:6}-{:9} s:{:6}-{:9}\
     24:{:6} {:6} {:6}'.format(*jo['ticker'])
 
-                print(form_str,end='\r')
+                print(form_str, end='\r')
                 ticker_price = float(jo['ticker'][0])
-                if op=='m':
-                    if target_price <= ticker_price: 
+                if op == 'm':
+                    if target_price <= ticker_price:
                         break
-                elif op=='l':
-                    if target_price >= ticker_price: 
+                elif op == 'l':
+                    if target_price >= ticker_price:
                         break
                 else:
                     print('unknown op:{}'.format(op))
                     break
-            print('\nalat:',target_price)
+            print('\nalat:', target_price)
         self.eloop.run_until_complete(
             async_f(self.wsfeeder, args[0], float(args[1]), args[2]))
         # ending when condition is met

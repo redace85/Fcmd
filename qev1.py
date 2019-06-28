@@ -4,11 +4,22 @@ import asyncio
 import signal
 import logging
 import sys
+import os
 import multiprocessing
+import socket
 import config
 
 
 class QuantEngine():
+    '''
+    the previous engine names~~
+
+    pt1engin: prototype qe
+    pt2engin: prototype qe
+    V1: first version of qe
+
+    This is the V1A2 quantitive engine~
+    '''
 
     #
     # Feeder process function
@@ -33,7 +44,7 @@ class QuantEngine():
         try:
             eloop.run_until_complete(async_f(eloop))
         except Exception as e:
-            logging.error('Catched and exit:', e)
+            logging.error('Catched and exit:{}'.format(e))
             # feeder err
             x = {'t': 'feeder', 'd': 'err'}
             mq.put(x)
@@ -66,14 +77,15 @@ class QuantEngine():
                 cls_ol.append({'o': 'x', 'p': -1, 'd': 'feeder_err'})
                 s_pip.send(cls_ol)
                 continue
-            if d['t'] == 'sigint':
-                logging.warning('sigint received')
-                # clean cmd
-                sig_ol = strategy_obj.clean_excmd()
-                # terminate signal at the end
-                sig_ol.append({'o': 'x', 'p': -1, 'd': 'sigint'})
-                s_pip.send(sig_ol)
-                logging.info('waiting 4 feeder signal...')
+            if d['t'] == 'ipc':
+                logging.info('ipc received')
+                if 'stop' == d['d']:
+                    logging.warning('ipc_stop')
+                    # clean cmd
+                    stop_ol = strategy_obj.clean_excmd()
+                    stop_ol.append({'o': 'x', 'p': -1, 'd': 'ipc_stop'})
+                    s_pip.send(stop_ol)
+                    logging.info('waiting 4 ipc_stop back...')
 
             while not mq.empty() and d['t'] == 'feeder':
                 # only lastest feeder msg matters
@@ -115,15 +127,16 @@ class QuantEngine():
     # }...]
     #
     def executor_process(self, mq, r_pip):
-        import engine_executors
+        from fcoin_executor import FcoinExecutor
 
         elp = asyncio.get_event_loop()
-        executor = engine_executors.FcoinExecutor(elp,config.mock_execution)
+        executor = FcoinExecutor(elp, config.mock_execution)
         # order buffer {pos:id}
         s_order_buffer = {}
 
         while True:
             order_res_list = []
+            # hold for income excmd
             ol = r_pip.recv()
             logging.info('exe_recv:{}'.format(ol))
             for o in ol:
@@ -139,7 +152,7 @@ class QuantEngine():
                         o_res['r'] = executor.submit_cancel(
                             s_order_buffer[o['p']])
                 elif 'c' == o['o']:
-                    # create order 
+                    # create order
                     (b_res, order_id) = executor.create_order(
                         *(o['d']))
                     if b_res:
@@ -147,13 +160,24 @@ class QuantEngine():
                     o_res['r'] = b_res
 
                 elif 'q' == o['o']:
-                    if o['p'] not in s_order_buffer:
-                        o_res['r'] = False
-                    else:
-                        o_res['r'] = executor.query_order_state(
-                            s_order_buffer[o['p']])
+                    # d: [dp], [tb,sym...], [or]
+                    if 'dp' == o['d'][0]:
+                        o_res['r'] = (o['d'][0],
+                                      executor.query_available_tb(o['d'][1:]))
+                    elif 'tb' == o['d'][0]:
+                        o_res['r'] = (o['d'][0],
+                                      executor.query_available_tb(o['d'][1:]))
 
-                elif 'x' == o['o']:
+                    elif 'or' == o['d'][0]:
+                        if o['p'] not in s_order_buffer:
+                            o_res['r'] = (False, 'id not exist')
+                        else:
+                            o_res['r'] = (o['d'][0],
+                                          executor.query_order(
+                                s_order_buffer[o['p']]))
+
+                elif 'x' == o['o'] or 'u' == o['o']:
+                    # no handle excmd 'x':terminate 'u':state update
                     o_res['r'] = o['d']
 
                 order_res_list.append(o_res)
@@ -177,51 +201,47 @@ class QuantEngine():
         self.mq = mq
         logging.info('engine construction finished')
 
-
-    def run(self):
+    def run(self, ipc_path):
         self.feeder_p.start()
         self.strategies_p.start()
         self.executor_p.start()
         logging.info('engine startup suceed...')
 
-        # reset sigint handler cancel all order when terminate
-        def sigint_handler(n, f):
-            logging.warning('engine sigint~')
-            x = {'t': 'sigint', 'd': 'sigint'}
-            self.mq.put(x)
-
-        # reset parent process signal handler
-        signal.signal(signal.SIGINT, sigint_handler)
+        # ipc loop
+        self._ipc_loop(ipc_path)
 
         # join forever
         self.strategies_p.join()
         self.feeder_p.terminate()
         self.executor_p.terminate()
+
+        os.unlink(ipc_path)
         logging.info('engine terminated')
 
+    def _ipc_loop(self, ipc_path):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(ipc_path)
 
-if __name__ == '__main__':
-    '''
-    the previous engine names~~
+        # Listen for incoming connections
+        sock.listen(1)
 
-    pt1engin: prototype qe
-    pt2engin: prototype qe
-    V1: first version of qe
-    '''
-    print('This is the V1A2 quantitive engine~')
+        while True:
+            connection, _ = sock.accept()
+            try:
+                data = connection.recv(32)
+                if data:
+                    cmd_str = data.decode('utf-8')
+                    logging.info('recv ipc cmd:{}'.format(cmd_str))
 
-    if config.output_std:
-        stream = sys.stdout
-    else:
-        stream = open('qev1.log',mode='w')
-
-    logging.basicConfig(stream = stream,
-                        format='%(levelname)s:%(message)s', level=config.logginglevel)
-
-    import strategy_pos
-
-    strategy_obj = strategy_pos.Position_Strategy()
-    strategy_obj.init_strategy_data()
-
-    qe = QuantEngine(strategy_obj)
-    qe.run()
+                    if 'stop' == cmd_str:
+                        # exit clean up
+                        logging.warning('engine ipc stop~')
+                        x = {'t': 'ipc', 'd': 'stop'}
+                        self.mq.put(x)
+                        break
+                else:
+                    # no more data
+                    logging.error('no ipc cmd received!')
+            finally:
+                # Clean up the connection
+                connection.close()
