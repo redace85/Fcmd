@@ -7,13 +7,13 @@ secret = ''
 # http proxy for scientific internet access
 proxy = None
 
+# whether use ifukang endpoint
+use_ifukang = True
+
 # qe engin config below
 
 #whether to mock execution
 mock_execution = True
-
-#output to stdout
-output_std = True
 
 #output logging level 20:info 30:warn
 logginglevel = 20

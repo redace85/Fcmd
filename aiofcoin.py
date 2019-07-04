@@ -13,10 +13,14 @@ GET = 'GET'
 
 
 class FcoinAPI():
-    def __init__(self, elp, key='', secret='', proxy=None):
-
-        api_address = 'api.fcoin.com'
-        crt_path = 'sca1b.crt'
+    def __init__(self, elp, key='', secret='', proxy=None, use_ifukang=False):
+        self.use_ifukang = use_ifukang
+        if self.use_ifukang:
+            api_address = 'api.ifukang.com'
+            crt_path = 'sca1bif.crt'
+        else:
+            api_address = 'api.fcoin.com'
+            crt_path = 'sca1b.crt'
 
         self.http = 'https://%s/v2/' % api_address
         self.http_orders = self.http+'orders/'
@@ -34,6 +38,10 @@ class FcoinAPI():
         await self.sess.close()
 
     async def signed_request(self, method, url, **params):
+        if self.use_ifukang:
+            sig_url = url.replace('ifukang','fcoin')
+        else:
+            sig_url = url
         param = ''
         if params:
             sort_pay = sorted(params.items(), key=lambda x: x[0])
@@ -41,15 +49,14 @@ class FcoinAPI():
             for k in sort_pay:
                 var_list.append('{}={}'.format(str(k[0]), str(k[1])))
             param = '&'.join(var_list)
-
         timestamp = str(int(time.time() * 1000))
 
         if method == GET:
             if param:
-                url = url + '?' + param
-            sig_str = method + url + timestamp
+                sig_url = sig_url + '?' + param
+            sig_str = method + sig_url + timestamp
         elif method == POST:
-            sig_str = method + url + timestamp + param
+            sig_str = method + sig_url + timestamp + param
 
         # double b64encode
         sig_str = base64.b64encode(sig_str.encode('utf-8'))

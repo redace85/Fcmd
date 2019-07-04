@@ -8,8 +8,11 @@ import ssl
 
 class WSFcoinFeeder():
 
-    def __init__(self, elp, proxy=None):
-        self.ws_url = 'wss://api.fcoin.com/v2/ws'
+    def __init__(self, elp, proxy=None, use_ifukang=False):
+        if use_ifukang:
+            self.ws_url = 'wss://api.ifukang.com/v2/ws'
+        else:
+            self.ws_url = 'wss://api.fcoin.com/v2/ws'
         self.proxy = proxy
         self.ws = None
 
@@ -29,7 +32,9 @@ class WSFcoinFeeder():
 
         self.ws = await self.sess.ws_connect(self.ws_url, ssl=self.sslcontext,
                                             proxy=self.proxy)
-        hello_msg = await self.ws.receive_json()
+        
+        # hello msg
+        _ = await self.ws.receive_json()
 
         ol = [{"cmd": "sub", "args": self.topics, "id": "fcmd_id"},
         {"cmd": "ping", "args": [int(time.time()*1000)], "id": "fcmd_id"}]

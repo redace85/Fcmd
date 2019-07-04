@@ -36,10 +36,11 @@ type ? to list the available cmds'''
 
         self.eloop = asyncio.get_event_loop()
 
-        self.fcoin_obj = aiofcoin.FcoinAPI(self.eloop,
-                                           config.key, config.secret, config.proxy)
+        self.fcoin_obj = aiofcoin.FcoinAPI(self.eloop, config.key, config.secret,
+                                           config.proxy, config.use_ifukang)
 
-        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop, config.proxy)
+        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop,
+                                                    config.proxy, config.use_ifukang)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
         self.order_list_abbr = {'s': 'submitted', 'f': 'filled',
@@ -423,7 +424,7 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
 
         args = arg.split(' ')
         params = dict()
-        for i, ar in enumerate(args):
+        for i, _ in enumerate(args):
             if 0 == i:
                 params['symbol'] = args[i]
             elif 1 == i:

@@ -117,3 +117,6 @@ alarm/alarm.scpt
 
 # str
 strategy_*.py
+
+# str
+monitor_*.py
