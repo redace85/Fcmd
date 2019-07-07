@@ -7,7 +7,6 @@ import sys
 import os
 import multiprocessing
 import socket
-import config
 
 
 class QuantEngine():
@@ -30,7 +29,7 @@ class QuantEngine():
         import time
 
         async def async_f(elp):
-            wsfeeder = WSFcoinFeeder(elp, config.proxy)
+            wsfeeder = WSFcoinFeeder(elp)
             while True:
                 # never stop feeder
                 await wsfeeder.con_sub(strategy_obj.topic)
@@ -126,11 +125,11 @@ class QuantEngine():
     # 'd'(data), - user defined data handle in this process (op, price, volume)
     # }...]
     #
-    def executor_process(self, mq, r_pip):
+    def executor_process(self, mq, r_pip, mock_execution):
         from fcoin_executor import FcoinExecutor
 
         elp = asyncio.get_event_loop()
-        executor = FcoinExecutor(elp, config.mock_execution)
+        executor = FcoinExecutor(elp, mock_execution)
         # order buffer {pos:id}
         s_order_buffer = {}
 
@@ -185,7 +184,7 @@ class QuantEngine():
             d = {'t': 'exeback', 'd': order_res_list}
             mq.put(d)
 
-    def __init__(self, strategy_obj):
+    def __init__(self, strategy_obj, proxy=None, mock_execution=False):
         # all children processes ignore sigint
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -197,7 +196,7 @@ class QuantEngine():
         self.strategies_p = multiprocessing.Process(name='qe_strategies',
                                                     target=self.strategies_process, args=(strategy_obj, mq, s_p))
         self.executor_p = multiprocessing.Process(name='qe_executor',
-                                                  target=self.executor_process, args=(mq, r_p))
+                                                  target=self.executor_process, args=(mq, r_p, mock_execution))
         self.mq = mq
         logging.info('engine construction finished')
 
@@ -211,7 +210,12 @@ class QuantEngine():
         self._ipc_loop(ipc_path)
 
         # join forever
-        self.strategies_p.join()
+        if self.strategies_p.is_alive():
+            logging.info('join strategies_p')
+            self.strategies_p.join()
+        else:
+            logging.warning('!strategies_p not alive!')
+
         self.feeder_p.terminate()
         self.executor_p.terminate()
 

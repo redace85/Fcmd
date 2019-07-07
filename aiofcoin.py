@@ -54,6 +54,7 @@ class FcoinAPI():
         if method == GET:
             if param:
                 sig_url = sig_url + '?' + param
+                url = url + '?' + param
             sig_str = method + sig_url + timestamp
         elif method == POST:
             sig_str = method + sig_url + timestamp + param

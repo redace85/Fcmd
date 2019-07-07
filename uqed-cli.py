@@ -18,7 +18,7 @@ if not os.path.exists(ipc_path):
     with context:
         stream = open('qev1.log',mode='w')
         logging.basicConfig(stream = stream,
-                            format='%(levelname)s:%(message)s',
+                            format='%(levelname)s # %(processName)s : %(message)s',
                             level=config.logginglevel)
 
         import strategy_pos
@@ -26,7 +26,7 @@ if not os.path.exists(ipc_path):
         strategy_obj = strategy_pos.Position_Strategy()
         strategy_obj.init_strategy_data()
 
-        qe = QuantEngine(strategy_obj)
+        qe = QuantEngine(strategy_obj, mock_execution=config.mock_execution)
         qe.run(ipc_path)
 else:
     print('stop quant engine!')

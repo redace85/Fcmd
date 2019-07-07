@@ -15,7 +15,7 @@ class FcoinExecutor():
         self.delay = delay
         self.eloop = elp
         self.fcoin_obj = FcoinAPI( elp,
-                config.key, config.secret, config.proxy)
+                config.key, config.secret, config.proxy, config.use_ifukang)
 
         self.order_create_abbr = {'b': {'side': 'buy'}, 's': {'side': 'sell'},
                                   'l': {'type': 'limit'}, 'm': {'type': 'market'}}

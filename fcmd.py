@@ -39,8 +39,7 @@ type ? to list the available cmds'''
         self.fcoin_obj = aiofcoin.FcoinAPI(self.eloop, config.key, config.secret,
                                            config.proxy, config.use_ifukang)
 
-        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop,
-                                                    config.proxy, config.use_ifukang)
+        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
         self.order_list_abbr = {'s': 'submitted', 'f': 'filled',
