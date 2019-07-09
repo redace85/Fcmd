@@ -17,7 +17,7 @@ class QuantEngine():
     pt2engin: prototype qe
     V1: first version of qe
 
-    This is the V1A2 quantitive engine~
+    This is the V1A3 quantitive engine~
     '''
 
     #
@@ -33,9 +33,12 @@ class QuantEngine():
             while True:
                 # never stop feeder
                 await wsfeeder.con_sub(strategy_obj.topic)
-                async for jo in wsfeeder.feed_stream():
-                    d = {'t': 'feeder', 'd': strategy_obj.reform_data(jo)}
-                    mq.put(d)
+                try:
+                    async for jo in wsfeeder.feed_stream():
+                        d = {'t': 'feeder', 'd': strategy_obj.reform_data(jo)}
+                        mq.put(d)
+                except TimeoutError:
+                    logging.error('system timeout, retrying...')
 
             await wsfeeder.close()
 
@@ -102,7 +105,7 @@ class QuantEngine():
                 non_feeder_buffer.clear()
 
             if d['t'] == 'feeder':
-                order_list = strategy_obj.generate_excmd_from_feeder_data(d)
+                order_list = strategy_obj.generate_excmd_from_feeder_data(d['d'])
                 if order_list:
                     s_pip.send(order_list)
 
@@ -159,10 +162,10 @@ class QuantEngine():
                     o_res['r'] = b_res
 
                 elif 'q' == o['o']:
-                    # d: [dp], [tb,sym...], [or]
+                    # d: [dp,symbol], [tb,sym...], [or]
                     if 'dp' == o['d'][0]:
                         o_res['r'] = (o['d'][0],
-                                      executor.query_available_tb(o['d'][1:]))
+                                      executor.query_dp_l20(o['d'][1]))
                     elif 'tb' == o['d'][0]:
                         o_res['r'] = (o['d'][0],
                                       executor.query_available_tb(o['d'][1:]))
@@ -186,7 +189,7 @@ class QuantEngine():
 
     def __init__(self, strategy_obj, proxy=None, mock_execution=False):
         # all children processes ignore sigint
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        #signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         mq = multiprocessing.Queue(9)
         r_p, s_p = multiprocessing.Pipe(False)

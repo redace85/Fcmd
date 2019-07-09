@@ -88,3 +88,13 @@ class FcoinExecutor():
                         break
             
             return (True, a_tb_dict)
+
+    def query_dp_l20(self, symbol):
+
+        (state_code, json_obj) = self.eloop.run_until_complete(
+            self.fcoin_obj.query_market_depth(symbol,'L20'))
+
+        if 200!= state_code or 'status' not in json_obj or 0 != json_obj['status']:
+            return (False, None)
+        else:
+            return (True, json_obj['data'])

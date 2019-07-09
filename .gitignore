@@ -120,3 +120,6 @@ strategy_*.py
 
 # str
 monitor_*.py
+
+# debug script
+debug*.py

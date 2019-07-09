@@ -21,9 +21,9 @@ if not os.path.exists(ipc_path):
                             format='%(levelname)s # %(processName)s : %(message)s',
                             level=config.logginglevel)
 
-        import strategy_pos
+        import strategy_ma
 
-        strategy_obj = strategy_pos.Position_Strategy()
+        strategy_obj = strategy_ma.Ma_pos_Strategy()
         strategy_obj.init_strategy_data()
 
         qe = QuantEngine(strategy_obj, mock_execution=config.mock_execution)
