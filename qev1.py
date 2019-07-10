@@ -149,17 +149,18 @@ class QuantEngine():
                 if 's' == o['o']:
                     # submit cancel
                     if o['p'] not in s_order_buffer:
-                        o_res['r'] = False
+                        o_res['r'] = (False,'pos not found')
                     else:
-                        o_res['r'] = executor.submit_cancel(
+                        exe_res = executor.submit_cancel(
                             s_order_buffer[o['p']])
+                    o_res['r'] = (exe_res,None)
                 elif 'c' == o['o']:
                     # create order
                     (b_res, order_id) = executor.create_order(
                         *(o['d']))
                     if b_res:
                         s_order_buffer[o['p']] = order_id
-                    o_res['r'] = b_res
+                    o_res['r'] = (b_res, order_id)
 
                 elif 'q' == o['o']:
                     # d: [dp,symbol], [tb,sym...], [or]
