@@ -111,15 +111,8 @@ config.py
 # experiment dir
 exp/
 
-# alarm files
-alarm/alarm.mp3
-alarm/alarm.scpt
-
 # str
 strategy_*.py
 
 # str
 monitor_*.py
-
-# debug script
-debug*.py

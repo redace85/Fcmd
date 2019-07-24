@@ -103,12 +103,14 @@ type ? to list the available cmds'''
 
         print(res_str)
 
-    def __fire_alarm(self):
-        a_file = './alarm/alarm.mp3'
-        if os.path.isfile(a_file) and sys.platform == 'darwin':
+    def __notify_me(self,msg):
+
+        if sys.platform == 'darwin':
             # MAC OS
-            os.system('osascript ./alarm/alarm.scpt')
-            #os.system('afplay '+a_file)
+            osa_str = 'display notification "{}" \
+                with title "Fcmd Notify" \
+                sound name "Submarine"'.format(msg)
+            os.system("osascript -e '{}'".format(osa_str))
         else:
             print('\7')
 
@@ -566,10 +568,10 @@ p:{:9} ev:{:9} ff:{:9} fi:{:9}\n'
                     print('unknown op:{}'.format(op))
                     break
             print('\nalat:', target_price)
+            self.__notify_me('alat:{}'.format(target_price))
+
         self.eloop.run_until_complete(
             async_f(self.wsfeeder, args[0], float(args[1]), args[2]))
-        # ending when condition is met
-        self.__fire_alarm()
 
     def do_e(self, arg):
         '''This cmd is for expriment purpose only

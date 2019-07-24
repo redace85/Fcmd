@@ -4,7 +4,6 @@ import asyncio
 import signal
 import logging
 import sys
-import os
 import multiprocessing
 import socket
 
@@ -66,7 +65,6 @@ class QuantEngine():
             s_pip.send(init_ol)
             logging.info('init excmd sent')
 
-        non_feeder_buffer = []
         p_running = True
         while p_running:
             d = mq.get()
@@ -92,17 +90,8 @@ class QuantEngine():
             while not mq.empty() and d['t'] == 'feeder':
                 # only lastest feeder msg matters
                 peek_data = mq.get()
-                if peek_data['t'] != 'feeder':
-                    non_feeder_buffer.append(peek_data)
-                else:
-                    logging.info('!!!newer d replaced')
-                    d = peek_data
-
-            if non_feeder_buffer:
-                logging.info('non_feeder_buffer refill')
-                for b in non_feeder_buffer:
-                    mq.put(b)
-                non_feeder_buffer.clear()
+                logging.info('!!!newer d replaced')
+                d = peek_data
 
             if d['t'] == 'feeder':
                 order_list = strategy_obj.generate_excmd_from_feeder_data(d['d'])
@@ -210,20 +199,15 @@ class QuantEngine():
         self.executor_p.start()
         logging.info('engine startup suceed...')
 
-        # ipc loop
-        self._ipc_loop(ipc_path)
+        if ipc_path is not None:
+            # ipc loop
+            self._ipc_loop(ipc_path)
 
-        # join forever
         if self.strategies_p.is_alive():
-            logging.info('join strategies_p')
             self.strategies_p.join()
-        else:
-            logging.warning('!strategies_p not alive!')
-
         self.feeder_p.terminate()
         self.executor_p.terminate()
 
-        os.unlink(ipc_path)
         logging.info('engine terminated')
 
     def _ipc_loop(self, ipc_path):
@@ -240,6 +224,10 @@ class QuantEngine():
                 if data:
                     cmd_str = data.decode('utf-8')
                     logging.info('recv ipc cmd:{}'.format(cmd_str))
+
+                    if not self.strategies_p.is_alive():
+                        logging.warning('!strategies_p not alive!')
+                        break
 
                     if 'stop' == cmd_str:
                         # exit clean up
