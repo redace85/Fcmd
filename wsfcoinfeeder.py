@@ -4,17 +4,16 @@ import asyncio
 import aiohttp
 import time
 import ssl
-import config
 
 
 class WSFcoinFeeder():
 
-    def __init__(self, elp):
-        if config.use_ifukang:
+    def __init__(self, elp, proxy=None, use_ifukang=False):
+        if use_ifukang:
             self.ws_url = 'wss://api.ifukang.com/v2/ws'
         else:
             self.ws_url = 'wss://api.fcoin.com/v2/ws'
-        self.proxy = config.proxy
+        self.proxy = proxy
         self.ws = None
 
         crt_path = 'sca1b.crt'

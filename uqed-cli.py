@@ -55,7 +55,12 @@ if not os.path.exists(ipc_path):
         with context:
             run_quant_engine(ipc_path)
 else:
-    print('stop quant engine!')
+    if signal_str:
+        message = signal_str.encode('utf-8')
+        print('send signal string:{}'.format(signal_str))
+    else:
+        print('stop quant engine!')
+        message = b'stop'
 
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
@@ -65,7 +70,6 @@ else:
         sys.exit(1)
 
     # send ipc cmd
-    message = b'stop'
     sock.sendall(message)
     sock.close()
 

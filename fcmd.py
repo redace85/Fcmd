@@ -12,11 +12,11 @@ import config
 
 
 class FcmdObj(Cmd):
-    intro = '''
+    intro = r'''
                    ___         ___           ___          _____
-                  /  /\       /  /\         /__/\        /  /::\\
-                 /  /:/_     /  /:/        |  |::\      /  /:/\:\\
-                /  /:/ /\   /  /:/         |  |:|:\    /  /:/  \:\\
+                  /  /\       /  /\         /__/\        /  /::\
+                 /  /:/_     /  /:/        |  |::\      /  /:/\:\
+                /  /:/ /\   /  /:/         |  |:|:\    /  /:/  \:\
                /  /:/ /:/  /  /:/  ___   __|__|:|\:\  /__/:/ \__\:|
               /__/:/ /:/  /__/:/  /  /\ /__/::::| \:\ \  \:\ /  /:/
               \  \:\/:/   \  \:\ /  /:/ \  \:\~~\__\/  \  \:\  /:/
@@ -39,7 +39,8 @@ type ? to list the available cmds'''
         self.fcoin_obj = aiofcoin.FcoinAPI(self.eloop, config.key, config.secret,
                                            config.proxy, config.use_ifukang)
 
-        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop)
+        self.wsfeeder = wsfcoinfeeder.WSFcoinFeeder(self.eloop, config.proxy,
+                                                    config.use_ifukang)
 
         self.otc_account_type = {'w': 'assets', 't': 'exchange'}
         self.order_list_abbr = {'s': 'submitted', 'f': 'filled',
@@ -103,7 +104,7 @@ type ? to list the available cmds'''
 
         print(res_str)
 
-    def __notify_me(self,msg):
+    def __notify_me(self, msg):
 
         if sys.platform == 'darwin':
             # MAC OS

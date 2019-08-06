@@ -25,10 +25,10 @@ class QuantEngine():
     def feeder_process(self, strategy_obj, mq):
 
         from wsfcoinfeeder import WSFcoinFeeder
-        import time
+        import config
 
         async def async_f(elp):
-            wsfeeder = WSFcoinFeeder(elp)
+            wsfeeder = WSFcoinFeeder(elp, config.proxy, config.use_ifukang)
             while True:
                 # never stop feeder
                 await wsfeeder.con_sub(strategy_obj.topic)
@@ -94,7 +94,8 @@ class QuantEngine():
                 d = peek_data
 
             if d['t'] == 'feeder':
-                order_list = strategy_obj.generate_excmd_from_feeder_data(d['d'])
+                order_list = strategy_obj.generate_excmd_from_feeder_data(
+                    d['d'])
                 if order_list:
                     s_pip.send(order_list)
 
@@ -138,11 +139,11 @@ class QuantEngine():
                 if 's' == o['o']:
                     # submit cancel
                     if o['p'] not in s_order_buffer:
-                        o_res['r'] = (False,'pos not found')
+                        o_res['r'] = (False, 'pos not found')
                     else:
                         exe_res = executor.submit_cancel(
                             s_order_buffer[o['p']])
-                    o_res['r'] = (exe_res,None)
+                    o_res['r'] = (exe_res, None)
                 elif 'c' == o['o']:
                     # create order
                     (b_res, order_id) = executor.create_order(
