@@ -1,7 +1,8 @@
 # Fcmd
+
 Fcmd 是一个用于操作fcoin账户的交互式命令行工具
 
-:cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: 
+:cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn: :cn:  
 
 使用的是fcoin官方提供的接口，文档地址：https://developer.fcoin.com/zh.html  
 为了增强安全性，现在加入了验证fcoin服务器的功能。
@@ -16,20 +17,20 @@ Fcmd 是一个用于操作fcoin账户的交互式命令行工具
 
 根目录下有requirement文件  
 
-```
+```bash
 pip3 install -r requirements.txt
 ```
 
 成功安装完依赖后，切换到根目录，重命名config.py.example -> config.py  
 
-```
+```bash
 mv config.py.example config.py
 ```
 
 编辑配置文件，填入在fcoin网站上开通的 key,secret 字串。  
 如果本机不能直接访问接口地址的话，可以设置一个代理服务器地址，目前只支持http的代理
 
-```
+```bash
 # http proxy for scientific internet access
 proxy = 'http://127.0.0.1:9012/'
 ```
@@ -38,7 +39,7 @@ proxy = 'http://127.0.0.1:9012/'
 
 执行 fcmd.py 进入交互式命令行
 
-```
+```bash
 fcmd.py
 ```
 
@@ -56,6 +57,7 @@ fcmd.py
 | **`w`** wallet 钱包账户 | wb(balance):钱包余额; w2t(wallet to trading):钱包账户转交易账户|
 
 其他命令
+
 - **`alat`**(alarm at): 盯盘功能，在指定的价格停止数据拉取并播放声音。（在当前目录下放置 alarm/alarm.mp3 文件，只支持MACOS）
 
 PS:目前otc的部分整体的流程还没完全搞明白，杠杆部分不太懂所以没有接入
@@ -76,4 +78,5 @@ PS:目前otc的部分整体的流程还没完全搞明白，杠杆部分不太�
 ![wx](/img/wx.jpeg)
 
 ## License
+
 `Fcmd` is licensed under the 3-Clause BSD license - see the LICENSE file for details.
